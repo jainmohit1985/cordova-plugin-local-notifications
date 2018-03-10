@@ -498,7 +498,7 @@ Or install a specific version:
 Or install the latest head version:
 
     $ cordova plugin add https://github.com/jainmohit1985/cordova-plugin-local-notifications.git
- 
+
 Or install from local source:
 
     $ cordova plugin add <path> --nofetch --nosave --link
