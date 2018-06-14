@@ -33,10 +33,10 @@ import android.service.notification.StatusBarNotification;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.util.ArraySet;
 import android.support.v4.util.Pair;
-
+import android.os.Build;
 import org.json.JSONException;
 import org.json.JSONObject;
-
+import android.util.Log;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
@@ -138,13 +138,27 @@ public final class Notification {
      * Notification type can be one of triggered or scheduled.
      */
     public Type getType () {
-        StatusBarNotification[] toasts = getNotMgr().getActiveNotifications();
+
+        StatusBarNotification[] toasts;
+
+        if (Build.VERSION.SDK_INT>=23) {
+            toasts = getNotMgr().getActiveNotifications();
+        }
+        else {
+            toasts = null;
+        }
+
         int id = getId();
 
-        for (StatusBarNotification toast : toasts) {
-            if (toast.getId() == id) {
-                return Type.TRIGGERED;
+        if(toasts!=null)
+        {
+            for (StatusBarNotification toast : toasts) {
+                if (toast.getId() == id) {
+                    return Type.TRIGGERED;
+                }
             }
+        } else {
+            Log.d("Notification", "toast null, API below 23 found, getActiveNotifications only support >=23");
         }
 
         return Type.SCHEDULED;
@@ -197,7 +211,31 @@ public final class Notification {
                     context, 0, intent, FLAG_CANCEL_CURRENT);
 
             try {
-                switch (options.getPriority()) {
+
+                if (Build.VERSION.SDK_INT>=19) 
+                {
+                    if (Build.VERSION.SDK_INT>=23) 
+                    {
+                        mgr.setExactAndAllowWhileIdle(RTC_WAKEUP, time, pi);
+                    } 
+                    else 
+                    {
+                        // Code was not working for API 22
+                       // mgr.setExact(RTC_WAKEUP, time, pi);
+                       
+                       //this code is working now!
+                        AlarmManager.AlarmClockInfo info = new AlarmManager.AlarmClockInfo(time, null);
+                        mgr.setAlarmClock(info, pi);
+                    }
+                } 
+                else 
+                {
+                    mgr.set(RTC_WAKEUP, time, pi);
+                }
+
+               //Priority based code commented for custom requirement 
+               
+                /*switch (options.getPriority()) {
                     case IMPORTANCE_MIN:
                         mgr.setExact(RTC, time, pi);
                         break;
@@ -207,7 +245,7 @@ public final class Notification {
                     default:
                         mgr.setExact(RTC_WAKEUP, time, pi);
                         break;
-                }
+                }*/
             } catch (Exception ignore) {
                 // Samsung devices have a known bug where a 500 alarms limit
                 // can crash the app
